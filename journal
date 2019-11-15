@@ -2,8 +2,8 @@
 08.11.2019	cd project_data
 08.11.2019	ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/bacteria/Escherichia_coli/assembly_summary.txt	качаем файл с ссылками
 08.11.2019	cat assembly_summary.txt | grep 'GCA_000005845.2_ASM584v2'	вытаскиваем нужную ссылку
-08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/005/845/GCA_000005845.2_ASM584v2/*_gemomic.fna.gz	качем исходники
-08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/*_genomic.gff.gz	качаем исходники
+08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/005/845/GCA_000005845.2_ASM584v2/*genomic.fna.gz	качем исходники
+08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/005/845/GCA_000005845.2_ASM584v2/*_genomic.gff.gz	качаем исходники
 08.11.2019	wget http://public.dobzhanskycenter.ru/mrayko/amp_res_1.fastq.zip	качаем результаты секвенирования
 08.11.2019	wget http://public.dobzhanskycenter.ru/mrayko/amp_res_2.fastq.zip	ссылка на 2 фаста файл
 # Проект не сложный? там все расписано. Думаю можно попробовать сделать часть и на R, пока учу bioconductor. 
@@ -27,7 +27,6 @@
 10.11.2019	fastqc -o . output_*_P*	повторяем анализ fastqc, сразу смотрим в браузере. Общее качество стало лучше, часть с флюидикой осталась.
 10.11.2019	java -jar ~/Trimmomatic-0.39/trimmomatic-0.39.jar PE -phred33 amp_res_1.fastq.gz amp_res_2.fastq.gz  output_1_30_P.fastq.gz  output_1_30_U.fastq.gz output_2_30_P.fastq.gz output_2_30_U.fastq.gz LEADING:30 TRAILING:30 SLIDINGWINDOW:10:30 MINLEN:20	подкрутил качество на 30.  Общее число ридов стало 455876.
 10.11.2019	fastqc -o . output_*_30_P*	снова посмотрим на прочтения. Стало еще лучше, что и ожидалось.
-#Возникает довольно сложный вопрос, а с каким качеством ридов дальше работать. Поработаю и с сырым и с новым
 10.11.2019	bwa index GCA_000005845.2_ASM584v2_genomic.fna.gz	строим индексы референса
 10.11.2019	bwa mem -t 4 GCA_000005845.2_ASM584v2_genomic.fna.gz output_1_30_P.fastq.gz output_2_30_P.fastq.gz 2>alignment_30.log | samtools view -b --threads 4 >alignment_30.bam	в 4 потока, минуя несжатый sam получаем bam файл
 10.11.2019	samtools flagstat alignment_30.bam	0.9992 ридов замаппились
