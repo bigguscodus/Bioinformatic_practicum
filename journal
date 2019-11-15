@@ -1,0 +1,44 @@
+#Сдал вчера проект по коммандной строке и с новыми знаниями можно и в бой. План на сегодня: освежить знания, что там за проект, продумать структуру. 
+08.11.2019	cd project_data
+08.11.2019	ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/bacteria/Escherichia_coli/assembly_summary.txt	качаем файл с ссылками
+08.11.2019	cat assembly_summary.txt | grep 'GCA_000005845.2_ASM584v2'	вытаскиваем нужную ссылку
+08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/005/845/GCA_000005845.2_ASM584v2/*_gemomic.fna.gz	качем исходники
+08.11.2019	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/*_genomic.gff.gz	качаем исходники
+08.11.2019	wget http://public.dobzhanskycenter.ru/mrayko/amp_res_1.fastq.zip	качаем результаты секвенирования
+08.11.2019	wget http://public.dobzhanskycenter.ru/mrayko/amp_res_2.fastq.zip	ссылка на 2 фаста файл
+# Проект не сложный? там все расписано. Думаю можно попробовать сделать часть и на R, пока учу bioconductor. 
+# План: до понедельника создать git репозиторий, провести весь анализ по существу. До среды написать отчет.
+# Утро воскресенья началось хорошо - команда усились напарником. Решили до вторника ковырять код, во вторник обсудить, что у кого получилось и смерджить в единый вариант.
+10.11.2019	zcat amp_res_1.fastq.zip | head -n 20	Подсмотрим архив; на первый взгляд все довольно канонично выглядит
+10.11.2019	zcat amp_res_2.fastq.zip | head -n 20	Вроде как тоже все нормально
+10.11.2019	zcat amp_res_1.fastq.zip | wc -l	1823504 строки
+10.11.2019	zcat amp_res_2.fastq.zip | wc -l	1823504 строки, что довольно логично для pair-end
+10.11.2019	zcat amp_res_2.fastq.zip | grep 'length' -c	мне не хочется сворачивать терминал, так что количество ридов подсчитаю так. Длина рида довольно стандартная метадата, так что каждый рид ей снабжен. 455876 ридов
+10.11.2019	zcat amp_res_1.fastq.zip | gzip -f >amp_res_1.fastq.gz	zip неудачный формат, перегоню в gzip
+10.11.2019	zcat amp_res_2.fastq.zip | gzip -f >amp_res_2.fastq.gz	тоже самое
+10.11.2019	rm amp_res_*.zip	удалим архивы, чтобы место освободить
+10.11.2019	fastqc -o . amp_res_*.fastq.gz	скормим все риды fastqc
+10.11.2019	elinks amp_res_1_fastqc.html	понял, что ненастолько хардкорный, пошел открывать в браузере оба файла. Риды совпали, что хорошо. Начиная с 90bp что-то пошло не так. В общем и целом так бывает у всех, надо посмотреть на саму плашку. Там похоже была проблема с флюидикой на прямом прочтении, а также либо грязь на линзе, либо краевые проблемы, тем более Khmer content тоже не прям идеален. Распределение нуклеотидов хорошее. В начале все скачет, но у иллюмины качество прочтения в начале такое себе довольно часто, плюс мы могли захватить технические последовательности. Дальше все выравниваятся на 25 процентах для каждого нуклеотида, что хорошо, можно предупреждение проигнорировать. Распределение GC контента унимодально, что намекает на отсутствие примесей чужой ДНК в пробе, предупреждение можно смело проигнорировать. Khmer content тоже не критичный. В целом, файл можно принимать в работу.
+10.11.2019	java -jar ~/Trimmomatic-0.39/trimmomatic-0.39.jar PE -phred33 amp_res_1.fastq.gz amp_res_2.fastq.gz  output_1_P.fastq.gz  output_1_U.fastq.gz output_2_P.fastq.gz output_2_U.fastq.gz LEADING:20 TRAILING:20 SLIDINGWINDOW:10:20 MINLEN:20	Запускаем, вроде работает.
+10.11.2019	zcat output_1_P.fastq.gz  | grep 'length' -c	446259 ридов прошло фильтр
+10.11.2019	zcat output_1_U.fastq.gz  | grep 'length' -c	9216 рида прошли фильтр только с прямого прочтения
+10.11.2019	zcat output_2_P.fastq.gz  | grep 'length' -c	446259 тут без сюрпризов
+10.11.2019	zcat output_2_U.fastq.gz  | grep 'length' -c	273 рида прошли фильтр только с обратного прочтения
+10.11.2019	fastqc -o . output_*_P*	повторяем анализ fastqc, сразу смотрим в браузере. Общее качество стало лучше, часть с флюидикой осталась.
+10.11.2019	java -jar ~/Trimmomatic-0.39/trimmomatic-0.39.jar PE -phred33 amp_res_1.fastq.gz amp_res_2.fastq.gz  output_1_30_P.fastq.gz  output_1_30_U.fastq.gz output_2_30_P.fastq.gz output_2_30_U.fastq.gz LEADING:30 TRAILING:30 SLIDINGWINDOW:10:30 MINLEN:20	подкрутил качество на 30.  Общее число ридов стало 455876.
+10.11.2019	fastqc -o . output_*_30_P*	снова посмотрим на прочтения. Стало еще лучше, что и ожидалось.
+#Возникает довольно сложный вопрос, а с каким качеством ридов дальше работать. Поработаю и с сырым и с новым
+10.11.2019	bwa index GCA_000005845.2_ASM584v2_genomic.fna.gz	строим индексы референса
+10.11.2019	bwa mem -t 4 GCA_000005845.2_ASM584v2_genomic.fna.gz output_1_30_P.fastq.gz output_2_30_P.fastq.gz 2>alignment_30.log | samtools view -b --threads 4 >alignment_30.bam	в 4 потока, минуя несжатый sam получаем bam файл
+10.11.2019	samtools flagstat alignment_30.bam	0.9992 ридов замаппились
+10.11.2019	samtools sort --threads 4 alignment_30.bam -o alignment_30_sorted.bam	делаем отсортированный bam
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.fna.gz | bgzip -f >ref.fastq.bzip	с gz не хочет работать samtools
+10.11.2019	samtools mpileup -f ref.fastq.bzip alignment_30_sorted.bam>my.mpileup_30
+10.11.2019	java -jar VarScan.v2.4.4.jar  mpileup2snp my.mpileup_30 --min-var-freq 0.50 --variants --output-vcf 1 > VarScan_results.vcf	делаю вариантколлинг
+#Не хочу запускать igv browser. Поищу прямо из терминала.	
+10.11.2019	cat VarScan_results.vcf | cut -f 2	вытягиваем позицию SNV
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.gff.gz | grep '^#' -v | awk '$4<93043' | awk '$5>93043' >snp_93043.txt	сохраняю данные по региону где произошла замена
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.gff.gz | grep '^#' -v | awk '$4<482698' | awk '$5>482698' >snp_482698.txt
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.gff.gz | grep '^#' -v | awk '$4<852762' | awk '$5>852762' >snp_852762.txt
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.gff.gz | grep '^#' -v | awk '$4<3535147' | awk '$5>3535147' >snp_3535147.txt
+10.11.2019	zcat GCA_000005845.2_ASM584v2_genomic.gff.gz | grep '^#' -v | awk '$4<4390754' | awk '$5>4390754' >snp_4390754.txt
