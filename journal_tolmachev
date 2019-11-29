@@ -1,0 +1,45 @@
+#В прошлый раз на проект хватило одного дня, плюс, тактически выгоднее работать, когда есть готовый пулл решенных ошибок. Так что начало работы дотировано 26.11.2019
+26.11.2019	wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/001/SRR1705851/SRR1705851.fastq.gz	качаем риды друга
+26.11.2019	https://www.ncbi.nlm.nih.gov/nuccore/KF848938.1?report=fasta	качаем референс не выпендриваясь
+26.11.2019	zcat SRR1705851.fastq.gz | head -n 20	быстрый взгляд не вызывает подозрений
+26.11.2019	cat sequence.fasta	header и размер намекаеют, что вроде как все прошло гладко
+26.11.2019	bwa index sequence.fasta	индексируем референс
+26.11.2019	bwa mem sequence.fasta SRR1705851.fastq.gz 2>delete.log | samtools view -b >alignment.bam	файл не большой, потоки тут не нужны
+26.11.2019	samtools flagstat alignment.bam	посмотрим статистику
+# замапилось слишком много ридов. 
+26.11.2019	samtools sort alignment.bam -o sorted_alignment.bam	отсортируем bam file
+26.11.2019	samtools index sorted_alignment.bam	проиндексируем bam file
+#Для корректной работы mplileup запускаем референс и bam в igv и видим диапозон покрытий [0-44522]. Значит установим значение ключа 45к.
+26.11.2019	samtools mpileup -d 45000 -f sequence.fasta sorted_alignment.bam>roommate.mplieup	
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp roommate.mplieup --min-var-freq 0.95 --variants --output-vcf 1 > VarScan_results.vcf	делаем вариант каллинг
+# Ошибка input stream not ready, waiting for 5 seconds. Гуглим, оказывается программа чувствительна к расширению, а оно с ошибкой. Странная фигня, я думла  linux неитрален к расширениям
+26.11.2019	rm roommate.mpliep
+26.11.2019	rm VarScan_results.vcf
+26.11.2019	samtools mpileup -d 45000 -f sequence.fasta sorted_alignment.bam>roommate.mpileup
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp roommate.mpileup --min-var-freq 0.95 --variants --output-vcf 1 > VarScan_results.vcf	теперь все работает как надо
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp roommate.mpileup --min-var-freq 0.001 --variants --output-vcf 1 > VarScan_results_0001.vcf	повторяем вариант коллинг с новым порогом
+26.11.2019	cat VarScan_results_0001.vcf | cut -f 10 | grep [0-9]*.[0-9]*%	вытаскиваем 10 колонку, регуляркой подсветим проценты
+26.11.2019	wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/008/SRR1705858/SRR1705858.fastq.gz	качаем контроль
+26.11.2019	wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/008/SRR1705858/SRR1705859.fastq.gz	качаем контроль
+26.11.2019	wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/000/SRR1705860/SRR1705860.fastq.gz	качаем контроль
+26.11.2019	bwa mem sequence.fasta SRR1705858.fastq.gz 2>delete_control_1.log | samtools view -b | samtools sort -o alignment_control_1.bam	выравниваем контрольную постановку на референс, тут потоки не нужны, файлы маленькие
+26.11.2019	bwa mem sequence.fasta SRR1705859.fastq.gz 2>delete_control_2.log | samtools view -b | samtools sort -o alignment_control_2.bam	выравниваем контрольную постановку на референс
+26.11.2019	bwa mem sequence.fasta SRR1705860.fastq.gz 2>delete_control_3.log | samtools view -b | samtools sort -o alignment_control_3.bam	выравниваем контрольную постановку на референс
+26.11.2019	samtools index alignment_control_1.bam 	индексируем bam для igv
+26.11.2019	samtools index alignment_control_1.bam 	индексируем bam для igv
+26.11.2019	samtools index alignment_control_1.bam 	индексируем bam для igv
+#Первый контроль имеет интервал покрытия [0-35782]; второй контроль имеет интервал покрытия [0-32837]; третий контроль имеет интервал покрытия [0-36262]
+26.11.2019	samtools mpileup -d 37000 -f sequence.fasta alignment_control_1.bam>control_1.mpileup
+26.11.2019	samtools mpileup -d 37000 -f sequence.fasta alignment_control_2.bam>control_2.mpileup
+26.11.2019	samtools mpileup -d 37000 -f sequence.fasta alignment_control_3.bam>control_3.mpileup
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp control_1.mpileup --min-var-freq 0.001 --variants --output-vcf 1 > VarScan_results_control_1.vcf	вариант коллинг для 1 контроля
+# 58 snp
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp control_2.mpileup --min-var-freq 0.001 --variants --output-vcf 1 > VarScan_results_control_2.vcf	вариант коллинг для 2 контроля
+# 52 snp, 2 snp отфильтрованы
+26.11.2019	java -jar VarScan.v2.4.4.jar mpileup2snp control_3.mpileup --min-var-freq 0.001 --variants --output-vcf 1 > VarScan_results_control_3.vcf	вариант коллинг для 3 контроля
+# 61 snp 
+26.11.2019	cat VarScan_results_control_1.vcf | cut -f 1,2,4,5,10 >control_1.tsv	сохраняем tsv c нужными колонками для 1 контроля
+26.11.2019	cat VarScan_results_control_2.vcf | cut -f 1,2,4,5,10 >control_2.tsv	сохраняем tsv c нужными колонками для 2 контроля 
+26.11.2019	cat VarScan_results_control_3.vcf | cut -f 1,2,4,5,10 >control_3.tsv	сохраняем tsv c нужными колонками для 3 контроля
+26.11.2019	cat VarScan_results_0001.vcf | cut -f 1,2,4,5,10 >roommate.tsv	сохраняем tsv c нужными колонками для 3 контроля
+# Дальше работаю в R. Код будет выложен на github.

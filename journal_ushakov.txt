@@ -1,0 +1,262 @@
+
+##########################################################26.11.19##################################################################	
+bwa version: 0.7.17-r1188
+samtools v1.7
+VarScan v2.4.3
+RStudio version 1.2.1335
+R version 3.6.1
+	
+	Download sequences of my roommate's viral sample and rename it:
+
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/001/SRR1705851/SRR1705851.fastq.gz
+mv SRR1705851.fastq.gz roommate.fastq.gz
+
+	Number of reads: 358265
+x
+	Download the reference sequence for the influenza hemagglutinin gene:
+
+efetch -db nuccore -id "KF848938.1" -format fasta > reference.fasta
+
+	Index the reference file -> align the roommate data to the reference -> compress alignment to BAM -> sort 
+
+bwa index reference.fasta | bwa mem reference.fasta roommate.fastq | samtools view -S -b - | samtools sort - > sorted_alignment.bam
+
+	Watch statistics:
+
+samtools flagstat sorted_alignment.bam 
+
+361349 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+3084 + 0 supplementary
+0 + 0 duplicates
+361116 + 0 mapped (99.94% : N/A)
+	
+	Index alignment and make mpileup-file:
+
+IGV-browser shows 44522 coverage, so we can set depth limit to 45000.
+samtools index sorted_alignment.bam | samtools mpileup -d 45000 -f reference.fasta sorted_alignment.bam > my_mpileup
+	
+	Variant calling
+
+varscan mpileup2snp my_mpileup --min-var-freq 0.95 --variants --output-vcf 1 > VarScan_results.vcf
+
+Only SNPs will be reported
+Warning: No p-value threshold provided, so p-values will not be calculated
+Min coverage:	8
+Min reads2:	2
+Min var freq:	0.95
+Min avg qual:	15
+P-value thresh:	0.01
+Reading input from my_mpileup
+1665 bases in pileup file
+5 variant positions (5 SNP, 0 indel)
+0 were failed by the strand-filter
+5 variant positions reported (5 SNP, 0 indel)
+
+	Look on variant
+
+cat VarScan_results.vcf | grep -v '^#' | cut -f 1-5
+
+KF848938.1	72	.	A	G	ACA -> ACG	Thr -> Thr	Syn
+KF848938.1	117	.	C	T	GCC -> GCT	Ala -> Ala	Syn
+KF848938.1	774	.	T	C	TTT -> TTC	Phe -> Phe	Syn
+KF848938.1	999	.	C	T	GGC -> GGT	Gly -> Gly	Syn
+KF848938.1	1260	.	A	C	CTA -> CTC	Leu -> Leu	Syn
+
+	Try to check rare variants and compare results
+
+varscan mpileup2snp my_mpileup --min-var-freq 0.001 --variants --output-vcf 1 > VarScan_results_001.vcf
+
+Min coverage:	8
+Min reads2:	2
+Min var freq:	0.001
+Min avg qual:	15
+P-value thresh:	0.01
+Reading input from my_mpileup
+1665 bases in pileup file
+23 variant positions (21 SNP, 2 indel)
+0 were failed by the strand-filter
+21 variant positions reported (21 SNP, 0 indel)
+
+	When you are allergic to awk:
+
+paste <(cat control1_varscan.vcf | grep -v '^#' | cut -f 2,4-5) <(cat control1_varscan.vcf | grep -v '^#' | cut -f 10 | grep -Po '[\d]+\.[\d]+%' | perl -pe 's|\%||')
+
+
+
+KF848938.1	72	.	A	G	99.96
+KF848938.1	117	.	C	T	99.82
+KF848938.1	254	.	A	G	0.17
+KF848938.1	276	.	A	G	0.17
+KF848938.1	307	.	C	T	0.94
+KF848938.1	340	.	T	C	0.17
+KF848938.1	389	.	T	C	0.22
+KF848938.1	691	.	A	G	0.17
+KF848938.1	722	.	A	G	0.2
+KF848938.1	744	.	A	G	0.17
+KF848938.1	774	.	T	C	99.96
+KF848938.1	802	.	A	G	0.23
+KF848938.1	859	.	A	G	0.18
+KF848938.1	915	.	T	C	0.19
+KF848938.1	999	.	C	T	99.86
+KF848938.1	1043	.	A	G	0.18
+KF848938.1	1086	.	A	G	0.21
+KF848938.1	1213	.	A	G	0.22
+KF848938.1	1260	.	A	C	99.94
+KF848938.1	1280	.	T	C	0.18
+KF848938.1	1458	.	T	C	0.84
+
+	Download the control files:
+
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/008/SRR1705858/SRR1705858.fastq.gz 
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/009/SRR1705859/SRR1705859.fastq.gz 
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR170/000/SRR1705860/SRR1705860.fastq.gz 
+
+Files *58.fastq.gz *59.fastq.gz *60.fastq.gz were manually renamed to control1[2,3].fastq.gz respectively
+Files have 256586 233327 and 249964 number of reads respectively.
+
+	Align all controls to reference with operations mentioned above:
+
+bwa mem ../reference.fasta control1.fastq.gz | samtools view -S -b - | samtools sort - > control1_alignment_sorted.bam
+bwa mem ../reference.fasta control2.fastq.gz | samtools view -S -b - | samtools sort - > control2_alignment_sorted.bam
+bwa mem ../reference.fasta control3.fastq.gz | samtools view -S -b - | samtools sort - > control3_alignment_sorted.bam
+
+
+
+	Control1								Control2
+
+256744 + 0 in total (QC-passed reads + QC-failed reads)		233451 + 0 in total (QC-passed reads + QC-failed reads)
+124 + 0 supplementary						0 + 0 secondary
+0 + 0 secondary							158 + 0 supplementary
+0 + 0 duplicates						0 + 0 duplicates	
+233375 + 0 mapped (99.97% : N/A)				256658 + 0 mapped (99.97% : N/A)
+
+		
+	Control3
+
+250184 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 secondary
+220 + 0 supplementary
+0 + 0 duplicates
+250108 + 0 mapped (99.97% : N/A)
+	
+
+Based on assumption, that coverage varies linearly we can roughly count it by following proportion:
+
+358265 - 44522
+260000 - x
+X = 32310
+
+So if we set coverage of 35000, then no mutation will be lost. UPD. As it turned out, these conclusions are not entirely true, but it was close to correct 37000 trashold :)
+
+	Index and make the mpileup files:
+
+samtools index control1_alignment_sorted.bam | samtools mpileup -d 37000 -f ../reference.fasta control1_alignment_sorted.bam > control1_mpileup
+
+samtools index control2_alignment_sorted.bam | samtools mpileup -d 37000 -f ../reference.fasta control2_alignment_sorted.bam > control2_mpileup
+
+samtools index control3_alignment_sorted.bam | samtools mpileup -d 37000 -f ../reference.fasta control3_alignment_sorted.bam > control3_mpileup
+
+##############################################################27.11.19##################################################################
+
+	Run VarScan on control samples
+
+varscan mpileup2snp control1_mpileup --min-var-freq 0.001 --variants --output-vcf 1 > control1_varscan.vcf 
+varscan mpileup2snp control2_mpileup --min-var-freq 0.001 --variants --output-vcf 1 > control2_varscan.vcf 
+
+
+	Control1						Control2
+
+1665 bases in pileup file					1665 bases in pileup file
+58 variant positions (58 SNP, 0 indel)				54 variant positions (54 SNP, 0 indel)
+1 were failed by the strand-filter				2 were failed by the strand-filter
+57 variant positions reported (57 SNP, 0 indel)			52 variant positions reported (52 SNP, 0 indel)
+
+
+	Control3
+
+1665 bases in pileup file
+61 variant positions (61 SNP, 0 indel)
+0 were failed by the strand-filter
+61 variant positions reported (61 SNP, 0 indel)
+
+Example:
+
+paste <(cat control1_varscan.vcf | grep -v '^#' | cut -f 2,4-5) <(cat control1_varscan.vcf | grep -v '^#' | cut -f 10 | grep -Po '[\d]+\.[\d]+%' | perl -pe 's|%||') | awk '$4<90'
+
+38	T	C	0.66
+54	T	C	0.3
+72	A	G	0.3
+95	A	G	0.24
+117	C	T	0.3
+165	T	C	0.24
+183	A	G	0.3
+216	A	G	0.22
+218	A	G	0.28
+222	T	C	0.26
+235	T	C	0.25
+254	A	G	0.25
+276	A	G	0.22
+297	T	C	0.2
+328	T	C	0.2
+340	T	C	0.23
+356	A	G	0.22
+370	A	G	0.21
+389	T	C	0.23
+409	T	C	0.22
+414	T	C	0.28
+421	A	G	0.18
+426	A	G	0.19
+463	A	G	0.19
+516	A	G	0.2
+566	A	G	0.22
+595	G	T	0.34
+597	A	G	0.17
+660	A	G	0.2
+670	A	G	0.29
+691	A	G	0.23
+722	A	G	0.23
+744	A	G	0.21
+774	T	C	0.3
+859	A	G	0.27
+915	T	C	0.26
+987	A	G	0.22
+1008	T	G	0.27
+1031	A	G	0.28
+1043	A	G	0.24
+1056	T	C	0.2
+1086	A	G	0.33
+1089	A	G	0.22
+1213	A	G	0.24
+1260	A	C	0.3
+1264	T	C	0.26
+1280	T	C	0.25
+1281	T	C	0.22
+1286	T	C	0.2
+1339	T	C	0.41
+1358	A	G	0.26
+1398	T	C	0.2
+1421	A	G	0.31
+1460	A	G	0.34
+1482	A	G	0.24
+1580	T	C	0.25
+1591	T	C	0.29
+
+	After calculations in Rstudio we've got the following table
+
+  average         SD    SD * 3
+1 0.2564912 0.07172595 0.2151778
+2 0.2369231 0.05237641 0.1571292
+3 0.2503279 0.07803775 0.2341133
+
+	Select roommate snps, which frequency is higher than 0.484:
+
+POS 	REF 	ALT 	FREQ	
+307   	C   	 T 	0.94	CCG -> TCG	Pro -> Ser	Missense
+1458  	T   	 C 	0.84	TAT -> TAC	Tyr -> Tyr	Syn
+
+	Thus we have one rare missense mutation:
+
+307   	C   	 T 	0.94	CCG -> TCG	Pro -> Ser	Missense	 103	Epitope D
+	
+

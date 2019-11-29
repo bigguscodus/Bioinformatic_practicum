@@ -1,0 +1,45 @@
+##fileformat=VCFv4.1
+##source=VarScan2
+##INFO=<ID=ADP,Number=1,Type=Integer,Description="Average per-sample depth of bases with Phred score >= 15">
+##INFO=<ID=WT,Number=1,Type=Integer,Description="Number of samples called reference (wild-type)">
+##INFO=<ID=HET,Number=1,Type=Integer,Description="Number of samples called heterozygous-variant">
+##INFO=<ID=HOM,Number=1,Type=Integer,Description="Number of samples called homozygous-variant">
+##INFO=<ID=NC,Number=1,Type=Integer,Description="Number of samples not called">
+##FILTER=<ID=str10,Description="Less than 10% or more than 90% of variant supporting reads on one strand">
+##FILTER=<ID=indelError,Description="Likely artifact due to indel reads at this position">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=SDP,Number=1,Type=Integer,Description="Raw Read Depth as reported by SAMtools">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Quality Read Depth of bases with Phred score >= 15">
+##FORMAT=<ID=RD,Number=1,Type=Integer,Description="Depth of reference-supporting bases (reads1)">
+##FORMAT=<ID=AD,Number=1,Type=Integer,Description="Depth of variant-supporting bases (reads2)">
+##FORMAT=<ID=FREQ,Number=1,Type=String,Description="Variant allele frequency">
+##FORMAT=<ID=PVAL,Number=1,Type=String,Description="P-value from Fisher's Exact Test">
+##FORMAT=<ID=RBQ,Number=1,Type=Integer,Description="Average quality of reference-supporting bases (qual1)">
+##FORMAT=<ID=ABQ,Number=1,Type=Integer,Description="Average quality of variant-supporting bases (qual2)">
+##FORMAT=<ID=RDF,Number=1,Type=Integer,Description="Depth of reference-supporting bases on forward strand (reads1plus)">
+##FORMAT=<ID=RDR,Number=1,Type=Integer,Description="Depth of reference-supporting bases on reverse strand (reads1minus)">
+##FORMAT=<ID=ADF,Number=1,Type=Integer,Description="Depth of variant-supporting bases on forward strand (reads2plus)">
+##FORMAT=<ID=ADR,Number=1,Type=Integer,Description="Depth of variant-supporting bases on reverse strand (reads2minus)">
+#CHROM	POS	REF	ALT	Sample1
+KF848938.1	72	A	G	1/1:255:16832:16794:6:16787:99.96%:0E0:35:36:4:2:10898:5889
+KF848938.1	117	C	T	1/1:255:20768:20663:36:20625:99.82%:0E0:35:37:27:9:13462:7163
+KF848938.1	254	A	G	0/1:20:35781:35626:35562:59:0.17%:8.5683E-3:36:36:23919:11643:37:22
+KF848938.1	276	A	G	0/1:24:37022:36965:36892:64:0.17%:3.3004E-3:37:35:22579:14313:30:34
+KF848938.1	307	C	T	0/1:255:37506:37386:37029:351:0.94%:6.9068E-66:36:35:22400:14629:184:167
+KF848938.1	340	T	C	0/1:23:37973:37793:37723:64:0.17%:4.6441E-3:37:36:23413:14310:40:24
+KF848938.1	389	T	C	0/1:40:31960:31763:31690:69:0.22%:9.0525E-5:37:36:16067:15623:44:25
+KF848938.1	691	A	G	0/1:23:39503:39319:39245:67:0.17%:4.1867E-3:37:34:21313:17932:23:44
+KF848938.1	722	A	G	0/1:36:38090:38036:37954:76:0.2%:2.353E-4:37:36:21003:16951:39:37
+KF848938.1	744	A	G	0/1:23:38443:38380:38306:65:0.17%:5.0068E-3:37:33:20859:17447:35:30
+KF848938.1	774	T	C	1/1:255:38397:38191:8:38177:99.96%:0E0:32:37:7:1:19806:18371
+KF848938.1	802	A	G	0/1:59:44236:44106:44001:101:0.23%:1.2224E-6:37:35:20575:23426:32:69
+KF848938.1	859	A	G	0/1:25:35895:35721:35655:63:0.18%:3.0291E-3:37:36:14499:21156:27:36
+KF848938.1	915	T	C	0/1:30:37022:36921:36842:69:0.19%:8.2327E-4:35:34:18059:18783:37:32
+KF848938.1	999	C	T	1/1:255:32561:32115:40:32070:99.86%:0E0:35:36:23:17:17184:14886
+KF848938.1	1043	A	G	0/1:25:31638:31590:31529:58:0.18%:2.756E-3:35:33:17353:14176:19:39
+KF848938.1	1086	A	G	0/1:29:25259:25258:25203:53:0.21%:1.0076E-3:36:35:12596:12607:21:32
+KF848938.1	1213	A	G	0/1:34:25177:25093:25035:56:0.22%:3.7244E-4:37:36:8964:16071:24:32
+KF848938.1	1260	A	C	1/1:255:23067:23033:2:23019:99.94%:0E0:32:37:0:2:9824:13195
+KF848938.1	1280	T	C	0/1:20:23487:23462:23418:43:0.18%:9.2875E-3:37:35:11147:12271:24:19
+KF848938.1	1458	T	C	0/1:255:27064:26929:26701:225:0.84%:3.4507E-41:37:35:6865:19836:80:145
