@@ -1,0 +1,157 @@
+###############################################################16.12.1#######################################################################
+	1.  Exploring the dataset
+
+	Download libraries from the TY2482 sample
+
+	470 bp
+
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292678sub_S1_L001_R1_001.fastq.gz
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292678sub_S1_L001_R2_001.fastq.gz
+
+	2kb
+
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292862_S2_L001_R1_001.fastq.gz
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292862_S2_L001_R2_001.fastq.gz
+	
+	6kb
+
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292770_S1_L001_R1_001.fastq.gz
+wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292770_S1_L001_R2_001.fastq.gz
+
+	Rename files for convenience
+
+ln -s SRR292678sub_S1_L001_R1_001.fastq.gz 470bp_forward.fastq.gz
+ln -s SRR292678sub_S1_L001_R2_001.fastq.gz 470bp_reverse.fastq.gz
+
+ln -s SRR292862_S2_L001_R1_001.fastq.gz 2kb_forward.fastq.gz
+ln -s SRR292862_S2_L001_R2_001.fastq.gz 2kb_reverse.fastq.gz
+
+ln -s SRR292770_S1_L001_R1_001.fastq.gz 6kb_forward.fastq.gz
+ln -s SRR292770_S1_L001_R2_001.fastq.gz 6kb_reverse.fastq.gz
+
+	Run FastQC
+
+fastqc -o fastqc_output 470bp_forward.fastq.gz 470bp_reverse.fastq.gz 
+fastqc -o fastqc_output 2kb_forward.fastq.gz 2kb_reverse.fastq.gz 
+fastqc -o fastqc_output 6kb_forward.fastq.gz 6kb_reverse.fastq.gz 
+
+	Number of reads
+
+470bp	5499346
+2kb	5102041
+6kb	5102041
+
+	Kmer content
+
+470bp	One overrepresented kmer in forward reads(orange circle). Everything is fine on reverse.
+2kb	Red circle both on forward and reverse reads. There are 3 overrepresented kmers (red circle) especially at the end of read
+6kb	One overepresented kmer in forward. Reverse is good.
+
+	3. Assembling E.coli X genome from paired reads
+
+	Run Spades assembler on SRR292678 library (470bp).
+
+spades.py -1 470bp_forward.fastq.gz -2 470bp_reverse.fastq.gz -o common_spades 
+
+	Perform subsequent analysis with QUAST
+
+quast.py -o quast/ ./spades/contigs.fasta ./spades/scaffolds.fasta
+	
+	4. Investigate impact of reads with large insert size
+
+	Tried to run spades with 2 mate-pair libraries with following comand:
+
+ spades.py -1 470bp/470bp_forward.fastq.gz -2 470bp/470bp_reverse.fastq.gz --mp1-1 2kb/2kb_forward.fastq.gz --mp1-2 2kb/2kb_reverse.fastq.gz --mp2-1 6kb/6kb_forward.fastq.gz --mp2-2 6kb/6kb_reverse.fastq.gz -o common_spades/
+
+	It finished with memory-error, so I decided to download files.
+
+	Run QUAST
+
+quast.py -o three_lib_quast/ three_libs_spades_out/contigs.fasta three_libs_spades_out/scaffolds.fasta 
+
+		QUAST reports data
+		
+		SRR292678-contigs	SRR292678-scaffolds	three_libs-contigs	three_libs-scaffolds
+	
+
+N50		105346			105346			335515			2815616
+
+contigs(>=0bp)	519			501			369			327	
+	
+HERE SHOULD BE SOME KIND OF INTERPRETATION OF THESE NUMBERS ABOVE.
+
+	5. Genome Annotation
+
+	Big problems with prokka installation because of old-blast+, firmly set in /usr/bin/; manually installation of new version of blast+ and other nice things...
+
+###################################################################17.12.19###################################################################
+	
+
+	When running prokka reseived this message
+
+~/prokka/bin/prokka --outdir prokka_out/ three_libs_spades_out/scaffolds.fasta
+
+Contig ID must <= 37 chars long: NODE_1_length_2815616_cov_74.3819_ID_564387
+Please rename your contigs OR try '--centre X --compliant' to generate clean contig names.
+
+	Try to run like this
+
+~/prokka/bin/prokka --outdir prokka_out/ --centre X --compliant three_libs_spades_out/scaffolds.fasta 
+
+	Try to run like this
+
+~/prokka/bin/prokka --outdir second_try/ --prefix "scaffolds" --compliant three_libs_spades_out/scaffolds.fasta 
+
+And it works!
+
+	6. Finding the closest relative of E.coli X
+
+	Need to install new tools? I love to install them! Especially prokka. Barrnap or RNAmmer? The choice is obvious: RNAmmer is like Hammer, so it must be very powerfull tool. UPD. It was the wrong choise. Ar first RNAmmer is older than Barrnap, secondly there are some troubles downloading it. Thirdly Barrnap use uses the new NHMMER tool that comes with HMMER 3.1 - it's like double edged Hammer!
+
+	~/barrnap/bin/barrnap three_libs_spades_out/contigs.fasta | grep "16S"
+
+
+NODE_16_length_113537_cov_78.5276_ID_565907	barrnap:0.9	rRNA	111955	113492	0	+	.	Name=16S_rRNA;product=16S ribosomal RNA
+NODE_1_length_698474_cov_70.3598_ID_565849	barrnap:0.9	rRNA	46	1583	0	-	.	Name=16S_rRNA;product=16S ribosomal RNA
+NODE_24_length_45417_cov_81.3463_ID_565899	barrnap:0.9	rRNA	43835	45372	0	+	.	Name=16S_rRNA;product=16S ribosomal RNA
+NODE_25_length_38063_cov_95.809_ID_565903	barrnap:0.9	rRNA	36481	38018	0	+	.	Name=16S_rRNA;product=16S ribosomal RNA
+NODE_5_length_353792_cov_75.7002_ID_565879	barrnap:0.9	rRNA	42579	44116	0	-	.	Name=16S_rRNA;product=16S ribosomal RNA
+NODE_7_length_269063_cov_84.1067_ID_565845	barrnap:0.9	rRNA	46	1583	0	-	.	Name=16S_rRNA;product=16S ribosomal RNA
+
+	Get 16S_RNA from assembled genome
+
+awk '{if($0 == ">NODE_16_length_113537_cov_78.5276_ID_565907") {print $0; line = getline; while ($line !~/^>/ ){print $line; line=getline}}}' three_libs_spades_out/contigs.fasta | perl -pe '/^>/ ? print "\n" : chomp' | tail -n+3 | awk '{print substr($0, 111955, 1536)}' > 16S_RNA.fasta
+
+	BLAST options:
+
+Database: Reference genomic sequences
+Entrez Query: 1900/01/01:2011/01/01[PDAT]
+
+The closest relative E.coli genome: Escherichia coli 55989 chromosome, complete genome
+NCBI Reference Sequence: NC_011748.1
+
+#######################################################################19.12.19##############################################################
+
+I prepared a report, slept for 1.5 hours and received several quizzes. It's time to complete the mini-project.
+
+	7. Search genetic cause of HUS
+
+New tool Mauve, new problems with Java. The first problem occurred when starting the program. It was fixed with following comand:
+
+/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar Mauve.jar
+
+Things like export JAVA_CMD=usr/lib/jvm/java-8-openjdk-amd64/bin/java didn't help. Second problem occured when starting alignment process. It was fixed by moving reference genome file and scaffolds.gfk right into the Mauve folder.
+
+When exploring alignment we found StxA and StxB genes, coding the subunits of Shiga toxins. Apparently, they got there along with the phage genome.
+
+	8. Antibiotic resistance detection
+
+	ResFinder results
+
+E.coli X is resistant to: Sulphonamide, Trimethoprim, Tetracycline, Beta-lactam (UOE-1, RblaTEM-1), Aminoglycoside
+
+Reference E. coli: Tetracycline
+
+	9. Antibiotic resistance mechanism
+
+Several genes encoding betalactamase have been found. At least one of them is located between phage genes and mobile elements.

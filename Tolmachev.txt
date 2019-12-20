@@ -1,0 +1,32 @@
+#бьют барабаны дедлайнов по дискретке, и сил почти нет
+18.12.2018	wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292678sub_S1_L001_R1_001.fastq.gz	качем данные
+18.12.2018	wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292862_S2_L001_R1_001.fastq.gz качаем данные
+18.12.2018	wget https://d28rh4a8wq0iu5.cloudfront.net/bioinfo/SRR292770_S1_L001_R2_001.fastq.gz качаем данные
+18.12.2018	fastqc -o fastqc_res *.fastq.gz	скормим все риды fastqc	
+# SRR292678sub_S1_L001_R2_001.fastq.gz 5499346 reads;SRR292770_S1_L001_R2_001.fastq.gz 5102041 reads; SRR292862_S2_L001_R1_001.fastq.gz 5102041 reads
+18.12.2018	./setup.py install	ставим spades
+18.12.2018	python3 spades.py --help	базовое значение потоков 16, памяти 256 Гб о_О
+18.12.2018	python3 spades.py --test	с почином
+#https://imgur.com/gallery/rqpiVzf
+18.12.2018	python3 spades.py --12 ~/third_bionformatic_project/SRR292678sub_S1_L001_R2_001.fastq.gz -o ~/third_bionformatic_project
+18.12.2018	python3 quast.py -o ~/third_bionformatic_project/quast_result ~/third_bionformatic_project/contigs.fasta ~/third_bionformatic_project/scaffolds.fasta 
+# кажется, здоровье ноутбука ушло в красную зону, скачаю файлы из интернета
+18.12.2018	python3 quast.py -o ~/third_bionformatic_project/quast_second_result ~/contigs.fasta ~/scaffolds.fasta
+#N50 контигов 105346	 для 1 библиотеки 105346, для трех 335515. Допустим мы знаем длину нашего генома, распологаем ее по убыванию длины контига, а N50 - длина контига, сумма с остальными большими дает больше половины длины. Чем оно больше, тем оно лучше, но это тольк на 1 взгляд и он критикуется очень сильно.
+# скачиваем прокку	
+18.12.2018	sudo apt-get install libdatetime-perl libxml-simple-perl libdigest-md5-perl git default-jre bioperl	ставим bioperl
+# есть  bioperl, biopython, bioconductor. Скоре мне кажется, будт требовать не просто биоинформатика, а full stack биоинформатика((
+18.12.2018	sudo cpan Bio::Perl
+18.12.2018	./prokka --setupdb	без этого работать не хотел, но очень понравилось, что автор даже приветсвие написал и сказал, что сделать
+18.12.2018	./prokka ~/scaffolds.fasta --centre X --compliant --outdir ~/third_bionformatic_project/prokka_result/	не хотел запускать с базовыми именами. Но я до конца не стал считать, это просто тест запуска. Воспользуюсь любезно предоставленным аутпутом.
+18.12.2018	git clone https://github.com/tseemann/barrnap.git	качаем source code
+18.12.2018	./barrnap --outseq Rib_16_S ~/scaffolds.fasta	находим 16S
+#дальше делаем grep по 16S и загоняем в blast. Получем E.Coli_55989 NC_011748 как самую близкую. Скачиваем фаста файл
+#Mauve вообще неинформативно падает. Гугл говорит, что ему нужна 8 java, у меня по дэфолту 11.  Регаемся на oracle и качаем старушку
+18.12.2018	sudo mkdir -p /opt/jdk	яваболь
+18.12.2018	sudo cp -rf /home/sivasai/jdk-8u231-linux-x64.tar.gz /opt/jdk/	яваболь
+18.12.2018	cd /opt/jdk/	яваболь
+18.12.2018	sudo tar -zxf jdk-8u231-linux-x64.tar.gz	яваболь
+18.12.2018	sudo update-alternatives —install /usr/bin/java java /opt/jdk/jdk1.8.0_231/bin/java 10000	яваболь
+18.12.2018	sudo update-alternatives —display java	яваболь
+12.12.2018 	./Mauve	запускаемся
